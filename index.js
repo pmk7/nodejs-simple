@@ -1,7 +1,9 @@
 const parse = require('url-parse');
 const fs = require('fs');
 const http = require('http');
-const url = require('url');
+const { URL } = require('url');
+
+const replaceTemplate = require('./modules/replaceTemplate');
 
 ///////////////////////
 ///FILES
@@ -21,22 +23,6 @@ const url = require('url');
 
 /////////////////////////////
 
-const replaceTemplate = (temp, product) => {
-  let output = temp.replace(/{%PRODUCTNAME%}/g, product.productName);
-  output = output.replace(/{%IMAGE%}/g, product.image);
-  output = output.replace(/{%PRICE%}/g, product.price);
-  output = output.replace(/{%FROM%}/g, product.from);
-  output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
-  output = output.replace(/{%QUANTITY%}/g, product.quantity);
-  output = output.replace(/{%DESCRIPTION%}/g, product.description);
-  output = output.replace(/{%ID%}/g, product.id);
-
-  if (!product.organic)
-    output = output.replace(/{%NOT_ORGANIC%}/g, 'not-organic');
-
-  return output;
-};
-
 const tempOverview = fs.readFileSync(
   `${__dirname}/templates/template-overview.html`,
   'utf-8'
@@ -54,9 +40,13 @@ const dataObj = JSON.parse(data);
 
 /// SERVER
 const server = http.createServer((req, res) => {
-  const pathName = req.url;
+  const baseUrl = `http://${req.headers.host}`;
+  const reqUrl = new URL(req.url, baseUrl);
 
-  // Overview Page
+  const query = Number(reqUrl.search.split('=')[1]);
+  const pathName = reqUrl.pathname;
+
+  /// Overview Page
   if (pathName === '/' || pathName === '/overview') {
     res.writeHead(200, { 'Content-type': 'text/html' });
 
@@ -68,11 +58,14 @@ const server = http.createServer((req, res) => {
 
     res.end(output);
 
-    // Product Page
+    /// Product Page
   } else if (pathName === '/product') {
-    res.end('This is the PRODUCT');
+    const product = dataObj.find((el) => el.id === query);
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    const prodHtml = replaceTemplate(tempProduct, product);
+    res.end(prodHtml);
 
-    // API
+    /// API
   } else if (pathName === '/api') {
     return fs.readFile(
       `${__dirname}/dev-data/data.json`,
@@ -84,14 +77,14 @@ const server = http.createServer((req, res) => {
       }
     );
 
-    // Not found
+    /// Not found
   } else {
     res.writeHead(404, {
       'Content-type': 'text/html',
     });
     res.end('<h1>Page not found!</h1>');
   }
-  //   res.end("Hello from the server side");
+  ///   res.end("Hello from the server side");
 });
 
 server.listen(8000, '127.0.0.1', () => {
