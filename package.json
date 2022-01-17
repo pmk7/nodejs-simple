@@ -4,12 +4,15 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "slugify": "^1.6.5",
     "url-parse": "^1.5.1"
   },
-  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon index.js"
   },
   "author": "Phil Keogh",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
 }
